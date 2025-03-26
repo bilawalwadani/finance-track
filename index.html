@@ -104,66 +104,12 @@
       50% { opacity: 0.7; }
       100% { opacity: 1; }
     }
-    .auth-container {
-      max-width: 400px;
-      margin: 100px auto;
-      padding: 20px;
-      background-color: white;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-
-    .auth-form input {
-      width: 100%;
-      margin-bottom: 10px;
-    }
-
-    .auth-form button {
-      width: 100%;
-      margin-top: 10px;
-    }
-
-    .user-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 20px;
-      background-color: #f8f9fa;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-
-    .logout-btn {
-      padding: 8px 16px;
-      background-color: #dc3545;
-    }
-
-    .logout-btn:hover {
-      background-color: #c82333;
-    }
   </style>
 </head>
 <body>
-  <div id="authContainer" class="auth-container">
-    <div id="loginForm" class="auth-form">
-      <h2>Login</h2>
-      <input type="email" id="loginEmail" placeholder="Email" />
-      <input type="password" id="loginPassword" placeholder="Password" />
-      <button onclick="login()">Login</button>
-      <p>Don't have an account? <a href="#" onclick="toggleAuth('signup')">Sign up</a></p>
-    </div>
 
-    <div id="signupForm" class="auth-form" style="display:none;">
-      <h2>Sign Up</h2>
-      <input type="email" id="signupEmail" placeholder="Email" />
-      <input type="password" id="signupPassword" placeholder="Password" />
-      <input type="password" id="confirmPassword" placeholder="Confirm Password" />
-      <button onclick="signup()">Sign Up</button>
-      <p>Already have an account? <a href="#" onclick="toggleAuth('login')">Login</a></p>
-    </div>
-  </div>
-
-  <div id="mainContainer" class="container" style="display:none;">
+  <!-- Change this line -->
+  <div id="mainContainer" class="container">
     <h1>Financial Management Dashboard</h1>
 
     <div class="tabs">
@@ -225,98 +171,11 @@
 
   <script>
     /* filepath: /C:/Users/Thinkpad/Documents/fyp dawlance cv/ytML/ahsan.html */
-    let currentUser = null;
-
-    function toggleAuth(type) {
-        document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
-        document.getElementById('signupForm').style.display = type === 'signup' ? 'block' : 'none';
-    }
-
-    function login() {
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
-        
-        const users = JSON.parse(localStorage.getItem('users') || '{}');
-        
-        if (users[email] && users[email].password === password) {
-            currentUser = email;
-            localStorage.setItem('currentUser', email);
-            loadUserData();
-            showMainContainer();
-        } else {
-            alert('Invalid email or password');
-        }
-    }
-
-    function signup() {
-        const email = document.getElementById('signupEmail').value;
-        const password = document.getElementById('signupPassword').value;
-        const confirmPass = document.getElementById('confirmPassword').value;
-        
-        if (password !== confirmPass) {
-            alert('Passwords do not match');
-            return;
-        }
-        
-        const users = JSON.parse(localStorage.getItem('users') || '{}');
-        
-        if (users[email]) {
-            alert('User already exists');
-            return;
-        }
-        
-        users[email] = {
-            password: password,
-            transactions: [],
-            billReminders: []
-        };
-        
-        localStorage.setItem('users', JSON.stringify(users));
-        alert('Account created successfully! Please login.');
-        toggleAuth('login');
-    }
-
-    function logout() {
-        currentUser = null;
-        localStorage.removeItem('currentUser');
-        transactions = [];
-        billReminders = [];
-        document.getElementById('authContainer').style.display = 'block';
-        document.getElementById('mainContainer').style.display = 'none';
-    }
-
-    function showMainContainer() {
-        document.getElementById('authContainer').style.display = 'none';
-        document.getElementById('mainContainer').style.display = 'block';
-        // Add user info and logout button
-        const userInfo = document.createElement('div');
-        userInfo.className = 'user-info';
-        userInfo.innerHTML = `
-            <span>Logged in as: ${currentUser}</span>
-            <button class="logout-btn" onclick="logout()">Logout</button>
-        `;
-        document.getElementById('mainContainer').insertBefore(userInfo, document.getElementById('mainContainer').firstChild);
-    }
-
-    function loadUserData() {
-        const users = JSON.parse(localStorage.getItem('users') || '{}');
-        if (users[currentUser]) {
-            transactions = users[currentUser].transactions || [];
-            billReminders = users[currentUser].billReminders || [];
-            renderTransactions();
-            renderBillReminders();
-            updateChart();
-        }
-    }
 
     // Add these functions at the start of your script section
     function saveToLocalStorage() {
-        const users = JSON.parse(localStorage.getItem('users') || '{}');
-        if (currentUser && users[currentUser]) {
-            users[currentUser].transactions = transactions;
-            users[currentUser].billReminders = billReminders;
-            localStorage.setItem('users', JSON.stringify(users));
-        }
+        localStorage.setItem('transactions', JSON.stringify(transactions));
+        localStorage.setItem('billReminders', JSON.stringify(billReminders));
     }
 
     function loadFromLocalStorage() {
@@ -632,12 +491,7 @@
         /* filepath: /C:/Users/Thinkpad/Documents/fyp dawlance cv/ytML/ahsan.html */
     // Modify the DOMContentLoaded event listener
     document.addEventListener('DOMContentLoaded', function() {
-        const savedUser = localStorage.getItem('currentUser');
-        if (savedUser) {
-            currentUser = savedUser;
-            loadUserData();
-            showMainContainer();
-        }
+        loadFromLocalStorage();
         document.getElementById('date').valueAsDate = new Date();
         renderBillReminders(); // Show any urgent bills on load
         renderTransactions();
@@ -646,3 +500,10 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+

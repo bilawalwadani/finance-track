@@ -172,21 +172,21 @@
   <script>
     /* filepath: /C:/Users/Thinkpad/Documents/fyp dawlance cv/ytML/ahsan.html */
 
-    // Add these functions at the start of your script section
-    function saveToLocalStorage() {
-        localStorage.setItem('transactions', JSON.stringify(transactions));
-        localStorage.setItem('billReminders', JSON.stringify(billReminders));
+    // Replace saveToLocalStorage function
+    async function saveToFirestore() {
+        await db.collection('finances').doc('data').set({
+            transactions: transactions,
+            billReminders: billReminders
+        });
     }
 
-    function loadFromLocalStorage() {
-        const savedTransactions = localStorage.getItem('transactions');
-        const savedReminders = localStorage.getItem('billReminders');
-        
-        if (savedTransactions) {
-            transactions = JSON.parse(savedTransactions);
-        }
-        if (savedReminders) {
-            billReminders = JSON.parse(savedReminders);
+    // Replace loadFromLocalStorage function
+    async function loadFromFirestore() {
+        const doc = await db.collection('finances').doc('data').get();
+        if (doc.exists) {
+            const data = doc.data();
+            transactions = data.transactions || [];
+            billReminders = data.billReminders || [];
         }
     }
 
@@ -206,7 +206,7 @@
       }
     }
 
-    // Modify the addTransaction function
+    // Update all functions that call saveToLocalStorage
     function addTransaction() {
       const date = document.getElementById('date').value;
       const desc = document.getElementById('desc').value;
@@ -220,12 +220,12 @@
 
       const transaction = { date, desc, amount, type };
       transactions.push(transaction);
-      saveToLocalStorage();
+      saveToFirestore(); // Replace saveToLocalStorage
       renderTransactions();
       updateChart();
     }
 
-    // Modify the addBillReminder function
+    // Update all functions that call saveToLocalStorage
     function addBillReminder() {
       const name = document.getElementById('billName').value;
       const amount = parseFloat(document.getElementById('billAmount').value);
@@ -237,7 +237,7 @@
       }
 
       billReminders.push({ name, amount, dueDate });
-      saveToLocalStorage();
+      saveToFirestore(); // Replace saveToLocalStorage
       renderBillReminders();
     }
 
@@ -308,10 +308,10 @@
         });
     }
 
-    // Modify the markBillPaid function
+    // Update all functions that call saveToLocalStorage
     function markBillPaid(index) {
         billReminders.splice(index, 1);
-        saveToLocalStorage();
+        saveToFirestore(); // Replace saveToLocalStorage
         renderBillReminders();
         // Remove any alerts when bill is paid
         document.querySelectorAll('.bill-alert').forEach(alert => alert.remove());
@@ -438,18 +438,18 @@
     });
 }
 
-    // Modify the deleteTransaction function
+    // Update all functions that call saveToLocalStorage
     function deleteTransaction(index) {
       transactions.splice(index, 1);
-      saveToLocalStorage();
+      saveToFirestore(); // Replace saveToLocalStorage
       renderTransactions();
       updateChart();
     }
 
-    // Modify the deleteBillReminder function
+    // Update all functions that call saveToLocalStorage
     function deleteBillReminder(index) {
       billReminders.splice(index, 1);
-      saveToLocalStorage();
+      saveToFirestore(); // Replace saveToLocalStorage
       renderBillReminders();
     }
 
@@ -489,14 +489,34 @@
     // Initialize app
     document.getElementById('date').valueAsDate = new Date();
         /* filepath: /C:/Users/Thinkpad/Documents/fyp dawlance cv/ytML/ahsan.html */
-    // Modify the DOMContentLoaded event listener
-    document.addEventListener('DOMContentLoaded', function() {
-        loadFromLocalStorage();
+    // Update the event listener
+    document.addEventListener('DOMContentLoaded', async function() {
+        await loadFromFirestore();
         document.getElementById('date').valueAsDate = new Date();
         renderBillReminders(); // Show any urgent bills on load
         renderTransactions();
         populateMonthSelector(); // Initialize month selector
     });
+  </script>
+
+  <!-- Add before closing body tag -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+
+  <script>
+  // Your Firebase configuration
+  const firebaseConfig = {
+      apiKey: "your-api-key",
+      authDomain: "your-auth-domain",
+      projectId: "your-project-id",
+      storageBucket: "your-storage-bucket",
+      messagingSenderId: "your-messaging-sender-id",
+      appId: "your-app-id"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
   </script>
 </body>
 </html>

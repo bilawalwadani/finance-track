@@ -4,7 +4,36 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Advanced Accounting App</title>
+  <!-- Update Firebase SDK versions to latest -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Firebase Config -->
+  <script>
+  const firebaseConfig = {
+      apiKey: "AIzaSyCF-swRIHYGaWwyETCKO8Sl_-uA6jnJWLY",
+      authDomain: "finance-track-48b34.firebaseapp.com",
+      projectId: "finance-track-48b34",
+      storageBucket: "finance-track-48b34.firebasestorage.app",
+      messagingSenderId: "89552171360",
+      appId: "1:89552171360:web:242fa8f67595a7f3eeae05",
+      measurementId: "G-61SVFXSBJG"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  
+  // Enable offline persistence
+  db.enablePersistence()
+    .catch((err) => {
+      if (err.code == 'failed-precondition') {
+        console.log('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+      } else if (err.code == 'unimplemented') {
+        console.log('The current browser does not support offline persistence');
+      }
+    });
+  </script>
   <style>
     body { 
       font-family: 'Segoe UI', sans-serif; 
@@ -104,6 +133,15 @@
       50% { opacity: 0.7; }
       100% { opacity: 1; }
     }
+    .error-container {
+      background-color: #ff4444;
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px auto;
+      max-width: 600px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -169,30 +207,92 @@
     <h3 id="summary"></h3>
   </div>
 
+  <!-- Add this after your container div -->
+  <div id="errorContainer" style="display:none;" class="error-container">
+    <p id="errorMessage"></p>
+    <button onclick="location.reload()">Retry</button>
+  </div>
+
   <script>
     /* filepath: /C:/Users/Thinkpad/Documents/fyp dawlance cv/ytML/ahsan.html */
 
-    // Replace saveToLocalStorage function
-    async function saveToFirestore() {
-        await db.collection('finances').doc('data').set({
-            transactions: transactions,
-            billReminders: billReminders
-        });
-    }
+    // Add this after Firebase initialization
+    let transactions = [];
+    let billReminders = [];
+    let chartInstance = null;
 
-    // Replace loadFromLocalStorage function
-    async function loadFromFirestore() {
-        const doc = await db.collection('finances').doc('data').get();
-        if (doc.exists) {
-            const data = doc.data();
-            transactions = data.transactions || [];
-            billReminders = data.billReminders || [];
+    // Update the saveToFirestore function
+    async function saveToFirestore() {
+        try {
+            await db.collection('finances').doc('mainData').set({
+                transactions: transactions,
+                billReminders: billReminders,
+                lastUpdated: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error("Error saving data: ", error);
+            alert("Error saving data. Please try again.");
         }
     }
 
-    let transactions = [];
-    let billReminders = [];
-    let chartInstance = null;  // Add this line at the top of your script with other variables
+    // Replace the existing loadFromFirestore function
+    async function loadFromFirestore() {
+        try {
+            const doc = await db.collection('finances').doc('mainData').get();
+            if (doc.exists) {
+                const data = doc.data();
+                transactions = data.transactions || [];
+                billReminders = data.billReminders || [];
+                renderTransactions();
+                renderBillReminders();
+                updateChart();
+            } else {
+                // Initialize with empty arrays if no data exists
+                await saveToFirestore();
+            }
+        } catch (error) {
+            console.error("Error loading data: ", error);
+            document.getElementById('errorMessage').textContent = "Error loading data: " + error.message;
+            document.getElementById('errorContainer').style.display = 'block';
+        }
+    }
+
+    // Add real-time updates
+    // Update the setupRealtimeUpdates function
+    function setupRealtimeUpdates() {
+        db.collection('finances').doc('mainData')
+            .onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    // Only update if data actually changed
+                    if (JSON.stringify(transactions) !== JSON.stringify(data.transactions)) {
+                        transactions = data.transactions || [];
+                        billReminders = data.billReminders || [];
+                        renderTransactions();
+                        renderBillReminders();
+                        updateChart();
+                    }
+                }
+            }, (error) => {
+                console.error("Real-time update error:", error);
+                document.getElementById('errorMessage').textContent = "Real-time update error: " + error.message;
+                document.getElementById('errorContainer').style.display = 'block';
+            });
+    }
+
+    // Replace the existing DOMContentLoaded listener
+    document.addEventListener('DOMContentLoaded', async function() {
+        try {
+            document.getElementById('date').valueAsDate = new Date();
+            await loadFromFirestore(); // Load initial data
+            setupRealtimeUpdates(); // Set up real-time updates
+            populateMonthSelector();
+        } catch (error) {
+            console.error("Error initializing app:", error);
+            document.getElementById('errorMessage').textContent = "Error initializing app: " + error.message;
+            document.getElementById('errorContainer').style.display = 'block';
+        }
+    });
 
     function switchTab(tabName) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
@@ -500,24 +600,6 @@
   </script>
 
   <!-- Add before closing body tag -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
-
-  <script>
-  // Your Firebase configuration
-  const firebaseConfig = {
-      apiKey: "your-api-key",
-      authDomain: "your-auth-domain",
-      projectId: "your-project-id",
-      storageBucket: "your-storage-bucket",
-      messagingSenderId: "your-messaging-sender-id",
-      appId: "your-app-id"
-  };
-
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  </script>
 </body>
 </html>
 
